@@ -1,6 +1,47 @@
-fakeData()
+/* 下面是共有属性 */
+//Model
+function Model(options){
+    this.data = options.data
+    this.resource = options.resource
+}
+Model.prototype.fetch = function(id){
+    console.log(`/${this.resource}s/${id}`)
+    return axios.get(`/${this.resource}s/${id}`).then((response)=>{
+        this.data = response.data
+        return response
+    })
+}
+Model.prototype.update = function(data){
+    let id = this.data.id
+    return axios.put(`/${this.resource}s/${id}`, data).then((response)=>{
+        this.data = response.data
+        return response
+    })
+}
+//View
+function View(el, template){
+    this.el = el
+    this.template = template
+}
+View.prototype.render = function(data){
+    let html = this.template
+    for(let key in data){
+        html = html.replace(`__${key}__`, data[key])
+    }
+    $(this.el).html(html)
+}
 
-let view = {
+
+/* 下面是实例 */
+let model = new Model({
+    data: {
+        name: '',
+        number: 0,
+        id: '',
+    },
+    resource: 'book'
+})
+let view = new View({
     el: '#app',
     template: `
         <div>
@@ -13,68 +54,44 @@ let view = {
             <button id="reset">归零</button>
         </div>
     `,
-    render(data){
-        let html = this.template.replace('__name__', data.name)
-            .replace('__number__', data.number)
-        $(this.el).html(html)
-    }
-}
-let model = {
-    data: {
-        name: '',
-        number: 0,
-        id: '',
-    },
-    fetch(id){
-        return axios.get(`/books/${id}`).then((response)=>{
-            this.data = response.data
-            return response
-        })
-    },
-    update(data){
-        let id = this.data.id
-        return axios.put(`/books/${id}`, data).then((response)=>{
-            this.data = response.data
-            return response
-        })
-    },
-}
-
+    
+})
 let controller = {
-    init(view, model){
+    init(options){
+        let view = options.view
+        let model = options.model
         this.veiw = view
         this.model = model
         this.view.render(this.model.data)
         this.bindEvents()
         this.model.fetch(1).then(()=>{
+            console.log('this.model.data')
+            console.log(this.model.data)
             this.view.render(this.model.data)
         })
     },
     addOne(){
         var oldNumber = $('#number').text() //string
         var newNumber = oldNumber - 0 + 1
-        model.update({
+        this.model.update({
             number: newNumber
         }).then(()=>{
-            console.log(0)
             this.view.render(this.model.data)
         })
     },
     minusOne(){
         var oldNumber = $('#number').text() 
         var newNumber = oldNumber - 0 - 1
-        model.update({
+        this.model.update({
             number: newNumber
         }).then(()=>{
-            console.log(1)
             this.view.render(this.model.data)
         })
     },
     reset(){
-        model.update({
+        this.model.update({
             number: 0
         }).then(()=>{
-            console.log(2)
             this.view.render(this.model.data)
         })
     },
@@ -84,8 +101,7 @@ let controller = {
         $(this.view.el).on('click', '#reset', this.reset.bind(this))
     },
 }
-controller.init(view, model)
-
+controller.init({view:view, model:model})
 
 
 function fakeData(){
