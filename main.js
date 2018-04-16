@@ -1,5 +1,3 @@
-/* 下面是共有属性 */
-//Model
 function Model(options){
     this.data = options.data
     this.resource = options.resource
@@ -18,19 +16,6 @@ Model.prototype.update = function(data){
         return response
     })
 }
-//View
-function View(el, template){
-    this.el = el
-    this.template = template
-}
-View.prototype.render = function(data){
-    let html = this.template
-    for(let key in data){
-        html = html.replace(`__${key}__`, data[key])
-    }
-    $(this.el).html(html)
-}
-
 
 /* 下面是实例 */
 let model = new Model({
@@ -41,67 +26,61 @@ let model = new Model({
     },
     resource: 'book'
 })
-let view = new View({
+let view = new Vue({
     el: '#app',
+    data: {
+        book: {
+            name: '',
+            number: 0,
+            id: '',
+        },
+        n: 1
+    },
+    
     template: `
         <div>
-          书名：《__name__》
-          数量：<span id="number">__number__</span>
+          书名：《{{book.name}}》
+          数量：<span id="number">{{book.number}}</span>
         </div>
         <div>
-            <button id="addOne">加1</button>
-            <button id="minusOne">减1</button>
-            <button id="reset">归零</button>
+            <input v-model="n">
+            n 的值是 {{n}}
+        </div>
+        <div>
+            <button v-on:click="addOne">加n</button>
+            <button v-on:click="minusOne">减n</button>
+            <button v-on:click="reset">归零</button>
         </div>
     `,
-    
+    created(){
+        model.fetch(1).then(()=>{
+            this.book = model.data
+        })
+    },
+    methods: {
+        addOne(){
+            model.update({
+                number: this.book.number + (this.n - 0)
+            }).then(()=>{
+                this.view.render(this.model.data)
+            })
+        },
+        minusOne(){
+            model.update({
+                number: this.book.number - (this.n - 0)
+            }).then(()=>{
+                this.view.render(this.model.data)
+            })
+        },
+        reset(){
+            model.update({
+                number: 0
+            }).then(()=>{
+                this.view.render(this.model.data)
+            })
+        },
+    }
 })
-let controller = {
-    init(options){
-        let view = options.view
-        let model = options.model
-        this.veiw = view
-        this.model = model
-        this.view.render(this.model.data)
-        this.bindEvents()
-        this.model.fetch(1).then(()=>{
-            console.log('this.model.data')
-            console.log(this.model.data)
-            this.view.render(this.model.data)
-        })
-    },
-    addOne(){
-        var oldNumber = $('#number').text() //string
-        var newNumber = oldNumber - 0 + 1
-        this.model.update({
-            number: newNumber
-        }).then(()=>{
-            this.view.render(this.model.data)
-        })
-    },
-    minusOne(){
-        var oldNumber = $('#number').text() 
-        var newNumber = oldNumber - 0 - 1
-        this.model.update({
-            number: newNumber
-        }).then(()=>{
-            this.view.render(this.model.data)
-        })
-    },
-    reset(){
-        this.model.update({
-            number: 0
-        }).then(()=>{
-            this.view.render(this.model.data)
-        })
-    },
-    bindEvents(){
-        $(this.view.el).on('click', '#addOne', this.addOne.bind(this))
-        $(this.view.el).on('click', '#minusOne', this.minusOne.bind(this))
-        $(this.view.el).on('click', '#reset', this.reset.bind(this))
-    },
-}
-controller.init({view:view, model:model})
 
 
 function fakeData(){
@@ -116,7 +95,7 @@ function fakeData(){
         //let {method, url, data} = config //data 是请求的 data
         if(url === '/books/1' && method === 'get'){
             response.data = book
-        }else if(url === '/books/2' && method === 'put'){
+        }else if(url === '/books/1' && method === 'put'){
             data = JSON.parse(data)
             Object.assign(book, data)
             response.data = book
